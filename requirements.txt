@@ -1,0 +1,4 @@
+Firebase-admin
+Flask
+Flask-graphql
+Graphene
