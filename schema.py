@@ -1,4 +1,4 @@
-from graphene import ObjectType, String, Schema, List, NonNull, Field, Mutation
+from graphene import ObjectType, String, Decimal, Schema, List, NonNull, Field, Mutation
 
 import database
 
@@ -16,6 +16,7 @@ class DbObjectType(ObjectType):
 	def resolve_id(self, info):
 		return self.doc.id
 
+
 class Client(DbObjectType):
 	username = String()
 	email = String()
@@ -24,11 +25,12 @@ class Client(DbObjectType):
 	class Meta:
 		default_resolver = db_resolver
 
+
 class Product(DbObjectType):
 	title = String()
 	description = String()
-	cost = String()
-	weight = String()
+	cost = Decimal()
+	weight = Decimal()
 
 	class Meta:
 		default_resolver = db_resolver
@@ -36,20 +38,28 @@ class Product(DbObjectType):
 
 class Query(ObjectType):
 	clients = List(Client)
-	client = Field(Client, id=String())
+	client_by_id = Field(Client, id=String())
+	client_by_credential = Field(Client, email=String(), password=String())
 	products = List(Product)
-	product = Field(Product, id=String())
+	product_by_id = Field(Product, id=String())
 
-	def resolve_client(self, info, id):
+	def resolve_client_by_id(self, info, id):
 		client_ref = database.clients_ref.document(id)
 		return Client(client_ref.get())
+
+	def resolve_client_by_credential(self, info, email, password):
+		client_ref = database.clients_ref \
+			.where('email', '==', email) \
+			.where('password', '==', password)
+
+		return Client(client_ref.get()[0])
 
 	def resolve_clients(self, info):
 		clients = database.clients_ref.stream()
 
 		return map(lambda client: Client(client), clients)
 
-	def resolve_product(self, info, id):
+	def resolve_product_by_id(self, info, id):
 		product_ref = database.products_ref.document(id)
 		return Product(product_ref.get())
 
